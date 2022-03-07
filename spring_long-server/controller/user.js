@@ -67,14 +67,11 @@ module.exports.login = async (ctx) => {
   // ! 查询sql 用户和密码是否正确 有数据说明正确
   const loginResult = await login(username, cryptoPassword(password))
   console.log(loginResult)
-  delete loginResult[0].password
   if (loginResult.length) {
     // 如果登录成功 根据用户名和密码生成Token 并重置数据库中的token
     const token = jwt.sign({
       data: { username, password }
-    }, jwtScrite, { expiresIn: "1h" })
-    const loginUpdataResult = await loginUpdata(username, token)
-    console.log(loginUpdataResult)
+    }, jwtScrite, { expiresIn: "1d" })
     // 登录成功返回 jwt 登录账户的所有信息
     ctx.body = {
       status: 200,

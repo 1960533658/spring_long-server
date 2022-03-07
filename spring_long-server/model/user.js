@@ -17,11 +17,9 @@ module.exports.isHasUsername = async (username) => {
 
 //#region  登录 查询所有信息-model
 module.exports.login = async (username, password) => {
-  return await query(`select * from user where username = '${username}' and password = '${password}';`)
-}
-// 登录时更新token
-module.exports.loginUpdata = async (username, token) => {
-  return await query(`UPDATE user SET token='${token}' where username='${username}'`)
+  return await query(`select \`id\`,\`username\`,\`mobile\`,\`birthday\`,\`create_time\`,\`sex\`,\`sign\`
+                      from user
+                      where username = '${username}' and password = '${password}';`)
 }
 //#endregion
 
