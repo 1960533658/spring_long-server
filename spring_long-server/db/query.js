@@ -16,7 +16,7 @@ module.exports.query = (sql, values) => {
     pool.getConnection(function (err, connection) {
       if (err) throw err; // not connected! 测试是否连接上数据库
 
-      // Use the connection 发送sql语句到数据库letao中执行
+      // Use the connection 发送sql语句到数据库spring_long中执行
       // 执行结果将会咋参数二中返回 -- result
       connection.query(sql, values, function (error, results, fields) {
         // When done with the connection, release it. 每当拿到数据库返回的数据之后 会释放当前连接
