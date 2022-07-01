@@ -8,17 +8,23 @@ const {
   getOtherApplyList,
   findMyApply,
   findApplyToMe,
-  isAgreeApply, getMainApplyList, getGoodFriednList, updateUserFriendList,
-  getgoodFriendInformation, getBothGoodFriends,
+  isAgreeApply,
+  getMainApplyList,
+  getGoodFriednList,
+  updateUserFriendList,
+  getgoodFriendInformation,
+  getBothGoodFriends,
+  getMyFirendList,
+  updateMyFriendListData,
 } = require("../../model/Chat/chat-friend");
-const {jwtToken} = require("../../utils/token");
-const {getMain} = require("../user");
-const {getTokenFromHeaders} = require("../../utils/getTokenFromHeaders");
+const { jwtToken } = require("../../utils/token");
+const { getMain } = require("../user");
+const { getTokenFromHeaders } = require("../../utils/getTokenFromHeaders");
 // 搜索用户
 module.exports.searchFriend = async (ctx) => {
-  const {key, id} = ctx.params;
+  const { key, id } = ctx.params;
   // console.log(ctx.params)
-  // console.log(key, id)
+  console.log(key, id);
   if (!key.trim()) {
     ctx.body = {
       status: 100,
@@ -38,7 +44,7 @@ module.exports.searchFriend = async (ctx) => {
 };
 // 添加用户
 module.exports.addFriend = async (ctx) => {
-  const {myId, id} = ctx.request.body;
+  const { myId, id } = ctx.request.body;
   // 去除请求头 携带的 Bearer字符
   const token = ctx.request.headers.authorization.split(" ")[1];
   // console.log(id)
@@ -76,15 +82,18 @@ module.exports.addFriend = async (ctx) => {
       }
       // 更新自己的好友表好友申请信息
       // 将添加好的自己的id数据更新给数据库
-      const updateMyApplyListResult = await updateMyApplyList(myId,
-          applyListData);
+      const updateMyApplyListResult = await updateMyApplyList(
+        myId,
+        applyListData
+      );
       //#endregion
       //#region  将申请信息添加到对方的申请信息中
       // ! 将获取到的好友预添加到好友的好友申请中的 apllyToMe {myApply:[], apllyToMe: []}
       const getOtherApplyListResult = await getOtherApplyList(id);
       // 将对方的apply_list JSON转对象
       let otherApplyListData = JSON.parse(
-          getOtherApplyListResult[0].apply_list);
+        getOtherApplyListResult[0].apply_list
+      );
       console.log("otherApplyListData", otherApplyListData);
       // 将 自己的id添加到对方的好友申请中
       if (!applyListData.apllyToMe.includes(myId)) {
@@ -96,13 +105,17 @@ module.exports.addFriend = async (ctx) => {
         };
         return;
       }
-      const updateOtherApplyListResult = await updateOtherApplyList(id,
-          otherApplyListData);
+      const updateOtherApplyListResult = await updateOtherApplyList(
+        id,
+        otherApplyListData
+      );
       // console.log("updateOtherApplyListResult", updateOtherApplyListResult)
       //#endregion
       //如果 自己和对方都添加好友申请成功 就返回添加成功
-      if (updateOtherApplyListResult.affectedRows &&
-          updateMyApplyListResult.affectedRows) {
+      if (
+        updateOtherApplyListResult.affectedRows &&
+        updateMyApplyListResult.affectedRows
+      ) {
         ctx.body = {
           status: 200,
           msg: "添加好友申请成功",
@@ -125,7 +138,7 @@ module.exports.findFriendApply = async (ctx) => {
   // 如果token验证成功 执行逻辑代码
   if (jwtVerify.decoded) {
     // 获取返回数据 { myApply: [ 2, 3 ], apllyToMe: [] }
-    const {apply_list} = ctx.request.body;
+    const { apply_list } = ctx.request.body;
     // 转换 myApply 的数据格式
     let myApply = apply_list.myApply.toString();
     // 定义变量接收我申请的好友的数据 为字符串
@@ -157,7 +170,26 @@ module.exports.findFriendApply = async (ctx) => {
     };
   }
 };
-
+// 获取用户所有的申请列表
+module.exports.getUserApplyList = async (ctx) => {
+  const token = getTokenFromHeaders(ctx);
+  const jwtVerify = jwtToken.decrypt(token);
+  if (jwtVerify.decoded) {
+    const { id: myId } = ctx.params;
+    const mainApplyListResult = await getMainApplyList(myId);
+    let mainApplyList = JSON.parse(mainApplyListResult[0].apply_list);
+    ctx.body = {
+      status: 200,
+      apply_list: mainApplyList,
+      msg: "初始化好友申请数据获取成功",
+    };
+  } else {
+    ctx.body = {
+      status: 101,
+      msg: "token验证过期",
+    };
+  }
+};
 // 是否同意好友申请
 module.exports.isagreeapply = async (ctx) => {
   // 获取请求数据的 id myId 是否同意的类型
@@ -167,15 +199,15 @@ module.exports.isagreeapply = async (ctx) => {
   // console.log(jwtVerify.decoded)
   // 如果token验证成功 执行逻辑代码
   if (jwtVerify.decoded) {
-    const {id, myId, type} = ctx.request.body;
+    const { id, myId, type } = ctx.request.body;
     //  如果 type 是 refuse 拒绝申请 删除applyToMe中的对方的Id 和对方myApply中的我的Id
-    const isAgreeApplyResult = await isAgreeApply({id, myId});
+    const isAgreeApplyResult = await isAgreeApply({ id, myId });
     // console.log(isAgreeApplyResult)
     if (isAgreeApplyResult.length !== 0) {
       // 定义变量接收 二者之一的
       let myApply, applyTome;
-      myApply = isAgreeApplyResult.filter(item => item.id === myId);
-      applyTome = isAgreeApplyResult.filter(item => item.id === id);
+      myApply = isAgreeApplyResult.filter((item) => item.id === myId);
+      applyTome = isAgreeApplyResult.filter((item) => item.id === id);
 
       const main = JSON.parse(myApply[0].apply_list);
       const his = JSON.parse(applyTome[0].apply_list);
@@ -196,8 +228,7 @@ module.exports.isagreeapply = async (ctx) => {
       // console.log(main);
       // console.log(his);
       // 进行删除之后 更新数据库中的apply_list
-      const mainUpdateApplyListResult = await updateOtherApplyList(myId,
-          main);
+      const mainUpdateApplyListResult = await updateOtherApplyList(myId, main);
       const hisUpdateApplyListResult = await updateOtherApplyList(id, his);
       // 获取修改后的 apply_ist 数据
       const mainApplyListResult = await getMainApplyList(myId);
@@ -208,13 +239,14 @@ module.exports.isagreeapply = async (ctx) => {
         const mainGoodsListResult = await getGoodFriednList(myId);
         const otherGoodsListResult = await getGoodFriednList(id);
         // 解构获取双方的好友列表对象
-        let {good_friends: myFriendsList} = mainGoodsListResult[0];
-        let {good_friends: otherFriendsList} = otherGoodsListResult[0];
+        let { good_friends: myFriendsList } = mainGoodsListResult[0];
+        let { good_friends: otherFriendsList } = otherGoodsListResult[0];
         myFriendsList = JSON.parse(myFriendsList);
         otherFriendsList = JSON.parse(otherFriendsList);
         //如果在双方的好友对象中都没有找到对方的id 就添加对方的id 并更新数据库
-        if (myFriendsList.findIndex(item => item === id) === -1 &&
-            otherFriendsList.findIndex(item => item === myId) === -1
+        if (
+          myFriendsList.findIndex((item) => item === id) === -1 &&
+          otherFriendsList.findIndex((item) => item === myId) === -1
         ) {
           myFriendsList.push(id);
           otherFriendsList.push(myId);
@@ -222,15 +254,20 @@ module.exports.isagreeapply = async (ctx) => {
           await updateUserFriendList(id, otherFriendsList);
         }
         if (
-            mainUpdateApplyListResult.affectedRows &&
-            hisUpdateApplyListResult.affectedRows
+          mainUpdateApplyListResult.affectedRows &&
+          hisUpdateApplyListResult.affectedRows
         ) {
+          // 获取添加的好友数据信息
+          const getAgreeApplyUserInfoResult = await getgoodFriendInformation(
+            id
+          );
           ctx.body = {
             status: 200,
             type,
             data: {
               mainApplyList,
             },
+            agreeApplyUserInfo: getAgreeApplyUserInfoResult[0],
             msg: "同意好友申请成功",
           };
         }
@@ -238,10 +275,9 @@ module.exports.isagreeapply = async (ctx) => {
       } else if (type === "refuse") {
         // 如果改变数据成功 就返回数据拒绝成功信息
         if (
-            mainUpdateApplyListResult.affectedRows &&
-            hisUpdateApplyListResult.affectedRows
+          mainUpdateApplyListResult.affectedRows &&
+          hisUpdateApplyListResult.affectedRows
         ) {
-
           ctx.body = {
             status: 200,
             type,
@@ -257,7 +293,6 @@ module.exports.isagreeapply = async (ctx) => {
           };
         }
       }
-
     } else {
       ctx.body = {
         status: 200,
@@ -276,7 +311,7 @@ module.exports.isagreeapply = async (ctx) => {
 //#region  获取好友列表
 module.exports.getFriendsList = async (ctx) => {
   // 获取传递的id
-  const {id} = ctx.params;
+  const { id } = ctx.params;
   //获取token
   const token = getTokenFromHeaders(ctx);
   // 验证token是否过期
@@ -288,7 +323,8 @@ module.exports.getFriendsList = async (ctx) => {
     let goodFriendsList = JSON.parse(getFriendsListResult[0].good_friends);
     // 通过数组转字符串获取数据库的好友信息数据
     const goodFriendsListInformationResult = await getgoodFriendInformation(
-        goodFriendsList.toString());
+      goodFriendsList.toString()
+    );
     ctx.body = {
       status: 200,
       data: goodFriendsListInformationResult,
@@ -305,7 +341,7 @@ module.exports.getFriendsList = async (ctx) => {
 
 //#region  删除好友
 module.exports.delFriend = async (ctx) => {
-  const {id, myId} = ctx.request.body;
+  const { id, myId } = ctx.request.body;
   console.log(id, myId);
   const token = getTokenFromHeaders(ctx);
   // 验证token是否过期
@@ -318,13 +354,14 @@ module.exports.delFriend = async (ctx) => {
     // 将 “[]” JSON数组转化为 数组
     let myGoodFriendsList = JSON.parse(getMyGoodFriendsResult[0].good_friends);
     let otherGoodFriendsList = JSON.parse(
-        getOtherGoodFriendsResult[0].good_friends);
+      getOtherGoodFriendsResult[0].good_friends
+    );
     // 将双方的好友id删除
-    myGoodFriendsList = myGoodFriendsList.filter(item => item !== id);
-    otherGoodFriendsList = otherGoodFriendsList.filter(item => item !== myId);
+    myGoodFriendsList = myGoodFriendsList.filter((item) => item !== id);
+    otherGoodFriendsList = otherGoodFriendsList.filter((item) => item !== myId);
     // 覆盖数据库的数据 为删除双方id后的结果
     await updateUserFriendList(myId, myGoodFriendsList);
-    await updateUserFriendList(id, otherGoodFriendsList)
+    await updateUserFriendList(id, otherGoodFriendsList);
     console.log(myGoodFriendsList);
     console.log(otherGoodFriendsList);
     ctx.body = {
@@ -337,6 +374,51 @@ module.exports.delFriend = async (ctx) => {
       msg: "token验证过期,请先登录",
     };
   }
+};
+//#endregion
 
+//#region  添加或者重新提升一个好友到聊天列表首位
+module.exports.addOrRearrangeGoodFriendsList = async (ctx) => {
+  const { id, myId } = ctx.request.body;
+  console.log(id, myId);
+  const token = getTokenFromHeaders(ctx);
+  // 验证token是否过期
+  const jwtVerify = jwtToken.decrypt(token);
+  //token 有效获取自已和对方的好友信息进行修改覆盖
+  if (jwtVerify.decoded) {
+    // 获取自己的好友聊天列表的数据
+    const getMyFriendListResult = await getMyFirendList(myId);
+    let myChatList = JSON.parse(getMyFriendListResult[0].user_chat_list);
+    // 如果好友聊天列表数据中不存在 这个id 就将id添加到好友聊天列表第一项的位置
+    const index = myChatList.findIndex((item) => item === id);
+    if (index === -1) {
+      myChatList.unshift(id);
+      //  如果好友聊天列表中存在此id，就将这一项提升到第一位
+    } else if (index !== -1 && index !== 0) {
+      // 定义变量接收对方 id 在好友聊天列表数据中的索引
+      const index = myChatList.findIndex((item) => item === id);
+      // 如果index 的位置不在首位(index!==0)
+      if (index !== 0) {
+        // 获取对方的这一项的值
+        const otherPary = myChatList.splice(index, 1);
+        //  将值添加到 index 为0的位置
+        myChatList.unshift(otherPary);
+      }
+    }
+    // 将修改好的数据添加到数据库
+    await updateMyFriendListData(myId, myChatList);
+
+    ctx.body = {
+      status: 200,
+      isTokenVerify: true,
+      myChatList,
+      msg: "添加聊天列表且排序成功",
+    };
+  } else {
+    ctx.body = {
+      status: 100,
+      msg: "token验证过期，请重新登录",
+    };
+  }
 };
 //#endregion

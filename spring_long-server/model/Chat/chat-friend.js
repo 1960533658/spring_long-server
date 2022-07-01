@@ -122,3 +122,23 @@ module.exports.getBothGoodFriends = async (id, myId) => {
   `);
 };
 //#endregion
+
+//#region  获取自己的好友聊天列表数据
+module.exports.getMyFirendList = async (myId) => {
+  return await query(`
+    select user_chat_list
+    from \`user_chat\`
+    where user_id=${myId}
+  `)
+}
+//#endregion
+
+//#region  将修改好的数据添加到数据库
+module.exports.updateMyFriendListData = async (myId, data) => {
+  return await query(`
+  update \`user_chat\`
+    set \`user_chat_list\` = "[${data}]"
+    where user_id=${myId}
+  `)
+}
+//#endregion

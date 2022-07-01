@@ -32,6 +32,14 @@ module.exports.registInsert_userFriendList = async (uid, username) => {
                           values ('${username}', '${uid}')`)
 }
 //#endregion
+//#region  注册——向 user_chat 添加初始数据
+module.exports.registInsert_userChat = async  (uid) => {
+  return await query(`
+    insert into user_chat (\`user_id\`)
+    values ('${uid}')
+  `)
+}
+//#endregion
 //#region  登录 查询user表所有信息-model
 module.exports.login = async (username, password) => {
   return await query(`select \`id\`

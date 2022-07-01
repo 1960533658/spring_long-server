@@ -16,7 +16,8 @@ const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 // 登陆加密字符串 jwt加密字符串
 const {scrite, jwtScrite} = require("../config/config");
-const {registInsert_userFriendList} = require("../model/user");
+const {registInsert_userFriendList, registInsert_userChat} = require(
+    "../model/user");
 
 //#region  注册-controller
 module.exports.regist = async (ctx) => {
@@ -68,9 +69,13 @@ module.exports.regist = async (ctx) => {
     const insert_userfriendResult = await registInsert_userfriend(id, username);
     const insert_userFriendListResult = await registInsert_userFriendList(id,
         username);
-    if (insertInformationResult.affectedRows &&
+    const insert_userChatResult = await registInsert_userChat(id);
+    if (
+        insertInformationResult.affectedRows &&
         insert_userfriendResult.affectedRows &&
-        insert_userFriendListResult.affectedRows) {
+        insert_userFriendListResult.affectedRows &&
+        insert_userChatResult.affectedRows
+    ) {
       ctx.body = {
         status: 200,
         msg: "注册成功",
